@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>智慧健康日誌與風險評估系統</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; background-color: #f4f7f6; }
+        h1, h2 { color: #333; }
+        .card { background: white; padding: 20px; margin-bottom: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .form-group { margin-bottom: 15px; }
+        label { display: block; margin-bottom: 5px; font-weight: bold; }
+        input { width: 100%; padding: 8px; box-sizing: border-box; border: 1px solid #ddd; border-radius: 4px; }
+        button { background-color: #28a745; color: white; border: none; padding: 10px 15px; border-radius: 4px; cursor: pointer; font-size: 16px; }
+        button:hover { background-color: #218838; }
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        th, td { border: 1px solid #ddd; padding: 10px; text-align: center; }
+        th { background-color: #f8f9fa; }
+        /* 風險等級顏色標籤 */
+        .risk-Low { background-color: #d4edda; color: #155724; padding: 3px 8px; border-radius: 4px; font-weight: bold; }
+        .risk-Medium { background-color: #fff3cd; color: #856404; padding: 3px 8px; border-radius: 4px; font-weight: bold; }
+        .risk-High { background-color: #f8d7da; color: #721c24; padding: 3px 8px; border-radius: 4px; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+    <h1>📋 智慧健康日誌與風險評估系統</h1>
+
+    <div class="card">
+        <h2>新增今日健康日誌</h2>
+        <form id="healthForm">
+            <div class="form-group">
+                <label>日期：</label>
+                <input type="date" id="log_date" required>
+            </div>
+            <div class="form-group">
+                <label>睡眠時數 (小時)：</label>
+                <input type="number" step="0.1" id="sleep_hours" placeholder="例如: 7.5" required>
+            </div>
+            <div class="form-group">
+                <label>每日步數：</label>
+                <input type="number" id="steps" placeholder="例如: 8000" required>
+            </div>
+            <div class="form-group">
+                <label>心情分數 (1 - 10 分)：</label>
+                <input type="number" min="1" max="10" id="mood_score" placeholder="例如: 8" required>
+            </div>
+            <button type="submit">送出並評估風險</button>
+        </form>
+    </div>
+
+    <div class="card">
+        <h2>歷史健康日誌紀錄</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>日期</th>
+                    <th>睡眠時數</th>
+                    <th>步數</th>
+                    <th>心情分數</th>
+                    <th>AI 風險評估結果</th>
+                </tr>
+            </thead>
+            <tbody id="logsTableBody">
+                </tbody>
+        </table>
+    </div>
+
+    <script>
+        const API_URL = 'http://localhost:3000/health-logs';
+
+        // 預設日期填入今天
+        document.getElementById('log_date').valueAsDate = new Date();
+
+        // 函數：從後端撈取所有日誌並渲染到表格
+        async function fetchLogs() {
+            try {
+                const response = await fetch(API_URL);
+                const logs = await response.json();
+                const tbody = document.getElementById('logsTableBody');
+                tbody.innerHTML = ''; // 清空舊資料
+
+                logs.forEach(log => {
+                    const tr = document.createElement('tr');
+                    
+                    // 根據風險等級套用不同的外觀 CSS Class
+                    const riskClass = log.risk_level ? `risk-${log.risk_level}` : '';
+                    const riskText = log.risk_level ? log.risk_level : '未評估';
+
+                    tr.innerHTML = `
+                        <td>${log.log_date}</td>
+                        <td>${log.sleep_hours} 小時</td>
+                        <td>${log.steps} 步</td>
+                        <td>${log.mood_score} 分</td>
+                        <td><span class="${riskClass}">${riskText}</span></td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+            } catch (error) {
+                console.error('撈取資料失敗:', error);
+            }
+        }
+
+        // 表單送出事件：將新資料 POST 到後端
+        document.getElementById('healthForm').addEventListener('submit', async (e) => {
+            e.preventDefault(); // 防止網頁重整
+
+            const formData = {
+                log_date: document.getElementById('log_date').value,
+                sleep_hours: parseFloat(document.getElementById('sleep_hours').value),
+                steps: parseInt(document.getElementById('steps').value),
+                mood_score: parseInt(document.getElementById('mood_score').value)
+            };
+
+            try {
+                const response = await fetch(API_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(formData)
+                });
+
+                const result = await response.json();
+                
+                if (response.ok) {
+                    alert(`新增成功！AI 決策樹評估結果為：${result.evaluated_risk}`);
+                    // 表單重設並重新整理表格
+                    document.getElementById('sleep_hours').value = '';
+                    document.getElementById('steps').value = '';
+                    document.getElementById('mood_score').value = '';
+                    fetchLogs(); 
+                } else {
+                    alert(`錯誤: ${result.error}`);
+                }
+            } catch (error) {
+                alert('無法連線到後端伺服器！');
+            }
+        });
+
+        // 網頁開啟時，自動執行撈取資料
+        fetchLogs();
+    </script>
+</body>
+</html>
