@@ -66,5 +66,5 @@
 
 1. **複製專案到本地**
    ```bash
-   git clone [請貼上你的 GitHub 倉庫網址]
+   git clone https://github.com/shanyku/SmartHealthLogAndRiskAssessmentSystem.git
    cd SmartHealthLogAndRiskAssessmentSystem
