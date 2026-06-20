@@ -1,4 +1,4 @@
-const sqlite3 = require('@vscode/sqlite3');
+const sqlite3 = require('sqlite3');
 const { open } = require('sqlite');
 
 // 1. 決策樹計算函式
