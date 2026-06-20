@@ -1,0 +1,7 @@
+services:
+  - type: web
+    name: my-node-app
+    runtime: node
+    envVars:
+      - key: UBUNTU_VERSION
+        value: "22.04"
